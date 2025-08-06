@@ -106,6 +106,21 @@ export default async function handler(req, res) {
 
       global.activeSessions.set(videoId, sessionData);
 
+      // Start auto-polling (optional background process)
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auto-poll`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            action: "start",
+            videoId 
+          })
+        });
+        console.log(`🔄 Auto-polling started for ${videoId}`);
+      } catch (pollError) {
+        console.warn("⚠️ Auto-polling failed to start:", pollError.message);
+      }
+
       return res.json({ 
         message: "Bot initialized successfully", 
         videoId,

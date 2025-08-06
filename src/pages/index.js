@@ -575,7 +575,7 @@ export default function Home() {
             <h3 className="text-lg font-semibold text-blue-800 mb-2">How it works:</h3>
             <ul className="text-blue-700 space-y-1">
               <li>• Enter a YouTube Live stream URL and click &quot;Start Listening&quot;</li>
-              <li>• Bot will automatically monitor the live chat every minute via Vercel Cron</li>
+              <li>• Bot monitors live chat via browser polling (1 sec) + server auto-polling (30 sec backup)</li>
               <li>• When moderators type &quot;!clip&quot;, 30 seconds BEFORE that timestamp gets captured</li>
               <li>• Use &quot;✂️ Manual Clip&quot; to create clips from any video with custom timing</li>
               <li>• Only chat moderators and stream owners can create clips via chat</li>

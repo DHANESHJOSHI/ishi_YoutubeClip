@@ -1,10 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/poll",
-      "schedule": "* * * * *"
-    }
-  ],
   "env": {
     "YT_API_KEY": "@yt_api_key",
     "GOOGLE_SERVICE_ACCOUNT": "@google_service_account",
