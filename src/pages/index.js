@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
+import Image from "next/image";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -175,7 +176,22 @@ export default function Home() {
         })
       });
 
-      setStatus("Bot stopped");
+      // Also stop auto-polling
+      try {
+        await fetch("/api/auto-poll", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            action: "stop",
+            videoId: activeSession.videoId 
+          })
+        });
+        console.log("🛑 Auto-polling stopped");
+      } catch (pollError) {
+        console.warn("⚠️ Failed to stop auto-polling:", pollError.message);
+      }
+
+      setStatus("Bot stopped (frontend + backend)");
       setActiveSession(null);
       setClips([]);
       setChatMessages([]);
@@ -188,19 +204,10 @@ export default function Home() {
     return new Date(timestamp).toLocaleString();
   };
 
-  const openClipModal = async (clip) => {
-    try {
-      // Fetch detailed clip info
-      const res = await fetch(clip.downloadLink.url);
-      const clipData = await res.json();
-      setSelectedClip({ ...clip, detailedInfo: clipData });
-      setShowClipModal(true);
-    } catch (error) {
-      console.error("Failed to fetch clip details:", error);
-      // Fallback to basic clip info
-      setSelectedClip(clip);
-      setShowClipModal(true);
-    }
+  const openClipModal = (clip) => {
+    // Skip detailed fetch - just show basic clip info
+    setSelectedClip(clip);
+    setShowClipModal(true);
   };
 
   const closeClipModal = () => {
@@ -487,9 +494,11 @@ export default function Home() {
                       >
                         <div className="flex items-center gap-2 mb-1">
                           {message.author.avatar && (
-                            <img 
+                            <Image 
                               src={message.author.avatar} 
                               alt={message.author.name}
+                              width={20}
+                              height={20}
                               className="w-5 h-5 rounded-full"
                             />
                           )}

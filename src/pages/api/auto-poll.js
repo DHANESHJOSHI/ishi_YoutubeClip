@@ -67,15 +67,28 @@ function startPollingLoop(videoId) {
           await pollChatMessages(videoId);
           scheduleNextPoll(); // Schedule next poll
         } catch (error) {
-          console.error("Polling error:", error);
+          console.error(`❌ Auto-polling error for ${videoId}:`, {
+            status: error.response?.status,
+            message: error.message,
+            timestamp: new Date().toISOString()
+          });
           
-          // Stop if stream ended
+          // Stop if stream ended or access denied
           if (error.response?.status === 403 || error.response?.status === 404) {
+            console.log(`🔴 Stream ended or access denied for ${videoId}. Stopping auto-polling.`);
             currentSession.isActive = false;
+          } else if (error.response?.status === 429) {
+            // Rate limit - wait longer before next poll
+            console.log(`⏰ Rate limited for ${videoId}. Waiting 2 minutes before retry.`);
+            setTimeout(() => scheduleNextPoll(), 120000); // 2 minutes
           } else {
-            scheduleNextPoll(); // Continue polling despite error
+            // Other errors - continue with normal interval
+            console.log(`⚠️ Non-critical error for ${videoId}. Continuing polling.`);
+            scheduleNextPoll();
           }
         }
+      } else {
+        console.log(`⏹️ Auto-polling stopped for ${videoId} (session inactive)`);
       }
     }, 30000); // 30 seconds
   }
@@ -86,7 +99,11 @@ function startPollingLoop(videoId) {
 async function pollChatMessages(videoId) {
   const session = global.activeSessions?.get(videoId);
   if (!session) {
-    throw new Error("Session not found");
+    throw new Error(`Session not found for videoId: ${videoId}`);
+  }
+
+  if (!session.liveChatId) {
+    throw new Error(`No liveChatId found for videoId: ${videoId}`);
   }
 
   const params = {
@@ -99,6 +116,8 @@ async function pollChatMessages(videoId) {
   if (session.nextPageToken) {
     params.pageToken = session.nextPageToken;
   }
+
+  console.log(`🔍 Auto-polling chat for ${videoId} (liveChatId: ${session.liveChatId})`);
 
   const chatRes = await axios.get(
     `https://www.googleapis.com/youtube/v3/liveChat/messages`,
