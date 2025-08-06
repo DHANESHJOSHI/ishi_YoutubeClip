@@ -53,6 +53,7 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString(),
         clips: clips.map(clip => ({
           id: clip._id,
+          videoId: clip.videoId,
           timestamp: clip.timestamp,
           moderator: clip.moderator,
           command: clip.command,

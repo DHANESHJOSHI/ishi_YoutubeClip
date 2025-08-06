@@ -77,7 +77,7 @@ export default async function handler(req, res) {
           // For !clip commands, go 30 seconds BEFORE the command
           const clipStartSeconds = Math.max(0, secondsFromBotStart - 30);
           
-          youtubeUrl = `https://www.youtube.com/watch?v=${videoId}&t=${clipStartSeconds}s`;
+          youtubeUrl = `https://youtu.be/${videoId}?t=${clipStartSeconds}`;
           
           console.log(`🔗 Generated YouTube URL: ${youtubeUrl} (${clipStartSeconds}s from bot start)`);
         } else {

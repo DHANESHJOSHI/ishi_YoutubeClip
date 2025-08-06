@@ -171,9 +171,29 @@ export default async function handler(req, res) {
 
     } catch (err) {
       console.error("Chat fetch error:", err.message);
+      
+      // Handle specific YouTube API errors
+      if (err.response?.status === 403) {
+        console.error("❌ YouTube API 403 Error - Check API key or video permissions");
+        return res.status(403).json({ 
+          error: "YouTube API access denied", 
+          details: "Invalid API key, quota exceeded, or video doesn't have live chat enabled",
+          suggestion: "Check your YouTube API key and ensure the video is a live stream with chat enabled"
+        });
+      }
+      
+      if (err.response?.status === 404) {
+        console.error("❌ YouTube API 404 Error - Live chat not found");
+        return res.status(404).json({ 
+          error: "Live chat not found", 
+          details: "The video may not be live or doesn't have chat enabled"
+        });
+      }
+      
       return res.status(500).json({ 
         error: "Failed to fetch chat messages", 
-        details: err.message 
+        details: err.message,
+        apiError: err.response?.data || null
       });
     }
 

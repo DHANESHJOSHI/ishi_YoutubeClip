@@ -106,12 +106,31 @@ export default async function handler(req, res) {
 
       global.activeSessions.set(videoId, sessionData);
 
+      // Start auto-polling in background
+      try {
+        const autoPollingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/auto-poll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoId, action: 'start' })
+        });
+        
+        if (autoPollingResponse.ok) {
+          console.log(`✅ Auto-polling started for video ${videoId}`);
+        } else {
+          console.warn(`⚠️ Failed to start auto-polling for video ${videoId}`);
+        }
+      } catch (pollErr) {
+        console.warn("Auto-polling start failed:", pollErr.message);
+      }
+
       return res.json({ 
         message: "Bot initialized successfully", 
         videoId,
         liveChatId,
         title: sessionData.title,
-        channelTitle: sessionData.channelTitle
+        channelTitle: sessionData.channelTitle,
+        startTime: sessionData.startTime,
+        autoPollingStarted: true
       });
       
     } catch (err) {

@@ -92,6 +92,20 @@ export default function Home() {
     try {
       const res = await fetch(`/api/chat?videoId=${videoId}&limit=50`);
       const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 403) {
+          setStatus("❌ YouTube API Error: Invalid API key or video doesn't have live chat");
+          return;
+        } else if (res.status === 404) {
+          setStatus("❌ Live chat not found. Is this video live with chat enabled?");
+          return;
+        } else {
+          setStatus(`❌ Chat Error: ${data.error || 'Unknown error'}`);
+          return;
+        }
+      }
+      
       if (data.success) {
         // Filter to show only moderator/owner messages and commands
         const filteredMessages = data.messages.filter(msg => 
@@ -188,19 +202,41 @@ export default function Home() {
     return new Date(timestamp).toLocaleString();
   };
 
-  const openClipModal = async (clip) => {
-    try {
-      // Fetch detailed clip info
-      const res = await fetch(clip.downloadLink.url);
-      const clipData = await res.json();
-      setSelectedClip({ ...clip, detailedInfo: clipData });
-      setShowClipModal(true);
-    } catch (error) {
-      console.error("Failed to fetch clip details:", error);
-      // Fallback to basic clip info
-      setSelectedClip(clip);
-      setShowClipModal(true);
+  const openClipModal = (clip) => {
+    // Calculate YouTube video timestamps relative to stream start
+    const session = activeSession;
+    if (!session || !clip.videoId) {
+      console.error("No active session or videoId found");
+      return;
     }
+    
+    const streamStartTime = new Date(session.startTime);
+    const clipTime = new Date(clip.timestamp);
+    
+    // Calculate seconds from stream start
+    const secondsFromStreamStart = Math.floor((clipTime - streamStartTime) / 1000);
+    
+    // For !clip commands, clip starts 30 seconds BEFORE the command
+    const clipStartSeconds = Math.max(0, secondsFromStreamStart - 30);
+    const clipEndSeconds = secondsFromStreamStart; // End at the exact !clip command time
+    
+    setSelectedClip({ 
+      ...clip, 
+      detailedInfo: {
+        clipInfo: {
+          startTime: clip.timestamp,
+          endTime: new Date(clipTime.getTime()), // End at command time, not +30s
+          duration: 30,
+          startSeconds: clipStartSeconds,
+          endSeconds: clipEndSeconds
+        },
+        links: {
+          youtube: `https://youtu.be/${clip.videoId}?t=${clipStartSeconds}`,
+          embed: `https://www.youtube.com/embed/${clip.videoId}?start=${clipStartSeconds}&end=${clipEndSeconds}`
+        }
+      }
+    });
+    setShowClipModal(true);
   };
 
   const closeClipModal = () => {
@@ -367,7 +403,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-              YouTube Live Clip Bot || Ishi Playss
+              YouTube Live Clip Bot 
             </h1>
 
             <div className="space-y-4">
@@ -581,6 +617,25 @@ export default function Home() {
               <li>• Only chat moderators and stream owners can create clips via chat</li>
               <li>• View all generated clips with download links and options</li>
             </ul>
+            
+            {/* API Debug Section */}
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600 text-sm">Debug Tools:</span>
+                <button
+                  onClick={() => window.open('/api/check-api', '_blank')}
+                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  🔧 Check API Status
+                </button>
+                <button
+                  onClick={() => window.open('/api/status', '_blank')}
+                  className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  📊 Bot Status
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Clip Details Modal */}
@@ -679,6 +734,14 @@ export default function Home() {
                             <span className="font-mono">{new Date(selectedClip.detailedInfo.clipInfo.endTime).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between">
+                            <span className="text-green-600">YouTube Start:</span>
+                            <span className="font-mono">{Math.floor(selectedClip.detailedInfo.clipInfo.startSeconds / 60)}:{(selectedClip.detailedInfo.clipInfo.startSeconds % 60).toString().padStart(2, '0')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-600">YouTube End:</span>
+                            <span className="font-mono">{Math.floor(selectedClip.detailedInfo.clipInfo.endSeconds / 60)}:{(selectedClip.detailedInfo.clipInfo.endSeconds % 60).toString().padStart(2, '0')}</span>
+                          </div>
+                          <div className="flex justify-between">
                             <span className="text-green-600">Duration:</span>
                             <span className="font-mono">{selectedClip.detailedInfo.clipInfo.duration} seconds</span>
                           </div>
@@ -703,14 +766,25 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Download Note */}
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-yellow-800 mb-2">📥 Download Note</h4>
-                      <p className="text-yellow-700 text-sm">
-                        Direct download feature requires additional implementation with yt-dlp and cloud storage.
-                        Currently showing YouTube links and timestamps for manual processing.
-                      </p>
-                    </div>
+                    {/* Copy URL Section */}
+                    {selectedClip.detailedInfo && (
+                      <div className="bg-purple-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-800 mb-3">📋 Copy URL</h4>
+                        <div className="bg-white border rounded p-3">
+                          <div className="flex items-center justify-between">
+                            <code className="text-sm text-gray-600 break-all">
+                              {selectedClip.detailedInfo.links.youtube}
+                            </code>
+                            <button
+                              onClick={() => navigator.clipboard.writeText(selectedClip.detailedInfo.links.youtube)}
+                              className="ml-2 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Modal Footer */}
