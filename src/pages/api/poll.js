@@ -2,7 +2,8 @@ import axios from "axios";
 import { saveClip } from "../../../lib/database.js";
 
 // This API route is designed for Vercel Cron Jobs
-// Add to vercel.json: { "cron": [{ "path": "/api/poll", "schedule": "*/5 * * * * *" }] }
+// Add to vercel.json: { "cron": [{ "path": "/api/poll", "schedule": "* * * * *" }] }
+// Runs every minute (Vercel doesn't support seconds)
 
 global.activeSessions = global.activeSessions || new Map();
 global.processedMessages = global.processedMessages || new Set();
