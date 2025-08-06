@@ -53,8 +53,8 @@ export default async function handler(req, res) {
               endSeconds: clipEndSeconds
             },
             links: {
-              // YouTube links
-              youtube: `https://www.youtube.com/watch?v=${videoId}&t=${clipStartSeconds}s`,
+              // YouTube links - starts at actual clip beginning (30 seconds before command)
+              youtube: `https://youtu.be/${videoId}?t=${clipStartSeconds}`,
               embed: `https://www.youtube.com/embed/${videoId}?start=${clipStartSeconds}&end=${clipEndSeconds}`,
               
               // Direct stream URL with timestamp parameters
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
         },
         links: {
           // YouTube links
-          youtube: `https://www.youtube.com/watch?v=${videoId}&t=${clipStartSeconds}s`,
+          youtube: `https://youtu.be/${videoId}?t=${clipStartSeconds}`,
           embed: `https://www.youtube.com/embed/${videoId}?start=${clipStartSeconds}&end=${clipEndSeconds}`,
           
           // Online downloaders with timestamp
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
             {
               name: "ClipConverter", 
               url: `https://www.clipconverter.cc/`,
-              note: `Paste: https://www.youtube.com/watch?v=${videoId}&t=${clipStartSeconds}s`
+              note: `Paste: https://youtu.be/${videoId}?t=${clipStartSeconds}`
             }
           ]
         },
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
           usage: "After installation, restart the server to enable direct downloads"
         },
         manualSteps: [
-          `1. Open: https://www.youtube.com/watch?v=${videoId}&t=${clipStartSeconds}s`,
+          `1. Open: https://youtu.be/${videoId}?t=${clipStartSeconds}`,
           `2. Use a screen recorder or browser extension to capture ${actualDuration} seconds`,
           `3. Or download full video and trim from ${Math.floor(clipStartSeconds/60)}:${clipStartSeconds%60} to ${Math.floor(clipEndSeconds/60)}:${clipEndSeconds%60}`
         ]
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
         error: "Failed to generate download options", 
         details: err.message,
         fallback: {
-          youtube: `https://www.youtube.com/watch?v=${req.query.videoId}&t=${Math.floor(new Date(req.query.start).getTime() / 1000)}s`,
+          youtube: `https://youtu.be/${req.query.videoId}?t=${Math.max(0, Math.floor(new Date(req.query.start).getTime() / 1000) - 30)}`,
           message: "Use YouTube link to watch from timestamp"
         }
       });

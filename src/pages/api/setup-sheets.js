@@ -176,7 +176,7 @@ export default async function handler(req, res) {
           "TechWithJoshi", 
           "!clip",
           "TechWithJoshi",
-          "https://www.youtube.com/watch?v=SAMPLE123&t=30s",
+          "https://youtu.be/SAMPLE123?t=30",
           new Date().toLocaleString('en-IN')
         ]
       ];
